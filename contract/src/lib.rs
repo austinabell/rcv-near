@@ -1,115 +1,136 @@
-/*
- * This is an example of a Rust smart contract with two simple, symmetric functions:
- *
- * 1. set_greeting: accepts a greeting, such as "howdy", and records it for the user (account_id)
- *    who sent the request
- * 2. get_greeting: accepts an account_id and returns the greeting saved for it, defaulting to
- *    "Hello"
- *
- * Learn more about writing NEAR smart contracts with Rust:
- * https://github.com/near/near-sdk-rs
- *
- */
+use std::collections::BTreeSet;
 
-// To conserve gas, efficient serialization is achieved through Borsh (http://borsh.io/)
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::wee_alloc;
-use near_sdk::{env, near_bindgen};
-use std::collections::HashMap;
+use near_sdk::collections::{TreeMap, UnorderedSet};
+use near_sdk::store::{Lazy, LazyOption};
+use near_sdk::{env, near_bindgen, require, AccountId, PanicOnDefault};
+use tallystick::borda::{DefaultBordaTally, Variant};
 
-#[global_allocator]
-static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
-
-// Structs in Rust are similar to other languages, and may include impl keyword as shown below
-// Note: the names of the structs are not important when calling the smart contract, but the function names are
 #[near_bindgen]
-#[derive(Default, BorshDeserialize, BorshSerialize)]
-pub struct Welcome {
-    records: HashMap<String, String>,
+#[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
+pub struct RankedChoiceVoting {
+    candidates: UnorderedSet<String>,
+    votes: TreeMap<AccountId, Vec<String>>,
+
+    winner: LazyOption<String>,
+    owner: Lazy<AccountId>,
 }
 
 #[near_bindgen]
-impl Welcome {
-    pub fn set_greeting(&mut self, message: String) {
-        let account_id = env::signer_account_id();
+impl RankedChoiceVoting {
+    #[init]
+    pub fn new(candidates: BTreeSet<String>) -> Self {
+        require!(!env::state_exists(), "State already initialized");
+        let mut candidate_set = UnorderedSet::new(b"c");
+        candidate_set.extend(candidates);
 
-        // Use env::log to record logs permanently to the blockchain!
-        env::log(format!("Saving greeting '{}' for account '{}'", message, account_id,).as_bytes());
-
-        self.records.insert(account_id, message);
-    }
-
-    // `match` is similar to `switch` in other languages; here we use it to default to "Hello" if
-    // self.records.get(&account_id) is not yet defined.
-    // Learn more: https://doc.rust-lang.org/book/ch06-02-match.html#matching-with-optiont
-    pub fn get_greeting(&self, account_id: String) -> &str {
-        match self.records.get(&account_id) {
-            Some(greeting) => greeting,
-            None => "Hello",
+        Self {
+            candidates: candidate_set,
+            votes: TreeMap::new(b"v"),
+            winner: LazyOption::new(b"w", None),
+            owner: Lazy::new(b"o", env::predecessor_account_id()),
         }
     }
+    /// Cast vote for the signer.
+    pub fn vote(&mut self, order: Vec<String>) {
+        let unique_votes: BTreeSet<_> = order.iter().collect();
+
+        // Ensure no duplicates
+        require!(unique_votes.len() == order.len());
+        for v in unique_votes {
+            // Assert that vote was for a valid candidate
+            require!(self.candidates.contains(v), "invalid candidate");
+        }
+
+        self.votes.insert(&env::signer_account_id(), &order);
+    }
+    fn calculate_winner(&self) -> Option<String> {
+        let mut tally = DefaultBordaTally::new(1, Variant::Borda);
+        for vote in self.votes.iter().map(|(_, v)| v) {
+            tally.add(vote).unwrap();
+        }
+
+        let winner = tally.winners().into_unranked();
+
+        winner.into_iter().next()
+    }
+    /// Returns current winner, or returns the candidate that will currently win.
+    pub fn get_winner(&self) -> Option<String> {
+        if let Some(winner) = &*self.winner {
+            return Some(winner.clone());
+        } else {
+            self.calculate_winner()
+        }
+    }
+
+    /// Calculate winner and update state, if winner is not already chosen.
+    pub fn decide(&mut self) {
+        require!(self.winner.is_none(), "winner is already selected");
+        require!(
+            env::predecessor_account_id() == *self.owner,
+            "only contract owner can end votes"
+        );
+
+        *self.winner = self.calculate_winner();
+    }
 }
 
-/*
- * The rest of this file holds the inline tests for the code above
- * Learn more about Rust tests: https://doc.rust-lang.org/book/ch11-01-writing-tests.html
- *
- * To run from contract directory:
- * cargo test -- --nocapture
- *
- * From project root, to run in combination with frontend tests:
- * yarn test
- *
- */
+#[cfg(not(target_arch = "wasm32"))]
 #[cfg(test)]
 mod tests {
     use super::*;
-    use near_sdk::MockedBlockchain;
+    use near_sdk::test_utils::VMContextBuilder;
     use near_sdk::{testing_env, VMContext};
 
-    // mock the context for testing, notice "signer_account_id" that was accessed above from env::
-    fn get_context(input: Vec<u8>, is_view: bool) -> VMContext {
-        VMContext {
-            current_account_id: "alice_near".to_string(),
-            signer_account_id: "bob_near".to_string(),
-            signer_account_pk: vec![0, 1, 2],
-            predecessor_account_id: "carol_near".to_string(),
-            input,
-            block_index: 0,
-            block_timestamp: 0,
-            account_balance: 0,
-            account_locked_balance: 0,
-            storage_usage: 0,
-            attached_deposit: 0,
-            prepaid_gas: 10u64.pow(18),
-            random_seed: vec![0, 1, 2],
-            is_view,
-            output_data_receivers: vec![],
-            epoch_height: 19,
-        }
+    fn get_context(signer: AccountId) -> VMContext {
+        VMContextBuilder::new()
+            .signer_account_id(signer.clone())
+            .predecessor_account_id(signer)
+            .build()
+    }
+
+    fn init_contract() -> RankedChoiceVoting {
+        let context = get_context("owner".parse().unwrap());
+        testing_env!(context);
+        let candidates: BTreeSet<String> = vec!["a".to_string(), "b".to_string(), "c".to_string()]
+            .into_iter()
+            .collect();
+        RankedChoiceVoting::new(candidates)
     }
 
     #[test]
-    fn set_then_get_greeting() {
-        let context = get_context(vec![], false);
-        testing_env!(context);
-        let mut contract = Welcome::default();
-        contract.set_greeting("howdy".to_string());
-        assert_eq!(
-            "howdy".to_string(),
-            contract.get_greeting("bob_near".to_string())
-        );
+    fn no_voters() {
+        let contract = init_contract();
+        assert!(contract.get_winner().is_none());
     }
 
     #[test]
-    fn get_default_greeting() {
-        let context = get_context(vec![], true);
-        testing_env!(context);
-        let contract = Welcome::default();
-        // this test did not call set_greeting so should return the default "Hello" greeting
-        assert_eq!(
-            "Hello".to_string(),
-            contract.get_greeting("francis.near".to_string())
-        );
+    #[should_panic = "invalid candidate"]
+    fn invalid_candidate() {
+        let mut contract = init_contract();
+        contract.vote(vec!["invalid".to_string(), "a".to_string()]);
+    }
+
+    #[test]
+    fn multiple_voters() {
+        let mut contract = init_contract();
+
+        testing_env!(get_context("bob".parse().unwrap()));
+        contract.vote(vec!["b".to_string(), "a".to_string(), "c".to_string()]);
+        assert_eq!(contract.get_winner().unwrap(), "b");
+
+        testing_env!(get_context("alice".parse().unwrap()));
+        contract.vote(vec!["a".to_string(), "c".to_string(), "b".to_string()]);
+
+        testing_env!(get_context("joe".parse().unwrap()));
+        contract.vote(vec!["b".to_string(), "a".to_string(), "c".to_string()]);
+
+        testing_env!(get_context("john".parse().unwrap()));
+        contract.vote(vec!["a".to_string(), "c".to_string()]);
+
+        testing_env!(get_context("jane".parse().unwrap()));
+        contract.vote(vec!["b".to_string(), "a".to_string(), "c".to_string()]);
+
+        assert_eq!(&contract.get_winner().unwrap(), "a");
     }
 }
