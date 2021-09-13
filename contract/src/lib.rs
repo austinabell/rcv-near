@@ -2,7 +2,6 @@ use std::collections::BTreeSet;
 
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{TreeMap, UnorderedSet};
-use near_sdk::store::{Lazy, LazyOption};
 use near_sdk::{env, near_bindgen, require, AccountId, PanicOnDefault};
 use tallystick::borda::{DefaultBordaTally, Variant};
 
@@ -11,9 +10,6 @@ use tallystick::borda::{DefaultBordaTally, Variant};
 pub struct RankedChoiceVoting {
     candidates: UnorderedSet<String>,
     votes: TreeMap<AccountId, Vec<String>>,
-
-    winner: LazyOption<String>,
-    owner: Lazy<AccountId>,
 }
 
 #[near_bindgen]
@@ -27,8 +23,6 @@ impl RankedChoiceVoting {
         Self {
             candidates: candidate_set,
             votes: TreeMap::new(b"v"),
-            winner: LazyOption::new(b"w", None),
-            owner: Lazy::new(b"o", env::predecessor_account_id()),
         }
     }
     /// Cast vote for the signer.
@@ -44,8 +38,9 @@ impl RankedChoiceVoting {
 
         self.votes.insert(&env::signer_account_id(), &order);
     }
-    fn calculate_winner(&self) -> Option<String> {
-        let mut tally = DefaultBordaTally::new(1, Variant::Borda);
+    /// Returns current winner.
+    pub fn get_winner(&self) -> Option<String> {
+            let mut tally = DefaultBordaTally::new(1, Variant::Borda);
         for vote in self.votes.iter().map(|(_, v)| v) {
             tally.add(vote).unwrap();
         }
@@ -53,25 +48,12 @@ impl RankedChoiceVoting {
         let winner = tally.winners().into_unranked();
 
         winner.into_iter().next()
-    }
-    /// Returns current winner, or returns the candidate that will currently win.
-    pub fn get_winner(&self) -> Option<String> {
-        if let Some(winner) = &*self.winner {
-            return Some(winner.clone());
-        } else {
-            self.calculate_winner()
-        }
+        
     }
 
-    /// Calculate winner and update state, if winner is not already chosen.
-    pub fn decide(&mut self) {
-        require!(self.winner.is_none(), "winner is already selected");
-        require!(
-            env::predecessor_account_id() == *self.owner,
-            "only contract owner can end votes"
-        );
-
-        *self.winner = self.calculate_winner();
+    /// Returns list of candidates. Not in any particular order.
+    pub fn get_candidates(&self) -> Vec<String> {
+        self.candidates.iter().collect()
     }
 }
 
@@ -102,6 +84,7 @@ mod tests {
     fn no_voters() {
         let contract = init_contract();
         assert!(contract.get_winner().is_none());
+        assert_eq!(contract.get_candidates().len(), 3);
     }
 
     #[test]
