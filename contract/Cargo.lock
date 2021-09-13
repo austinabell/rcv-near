@@ -577,7 +577,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "rcv-near"
+name = "rcv_near"
 version = "0.1.0"
 dependencies = [
  "near-sdk",
