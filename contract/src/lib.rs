@@ -40,7 +40,7 @@ impl RankedChoiceVoting {
     }
     /// Returns current winner.
     pub fn get_winner(&self) -> Option<String> {
-            let mut tally = DefaultBordaTally::new(1, Variant::Borda);
+        let mut tally = DefaultBordaTally::new(1, Variant::Borda);
         for vote in self.votes.iter().map(|(_, v)| v) {
             tally.add(vote).unwrap();
         }
@@ -48,7 +48,6 @@ impl RankedChoiceVoting {
         let winner = tally.winners().into_unranked();
 
         winner.into_iter().next()
-        
     }
 
     /// Returns list of candidates. Not in any particular order.
