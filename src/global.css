@@ -136,6 +136,13 @@ li {
   padding-bottom: 1em;
 }
 
+.container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
 aside {
   animation: notify ease-in-out 10s;
   background-color: var(--shadow);

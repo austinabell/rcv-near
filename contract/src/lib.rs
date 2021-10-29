@@ -1,15 +1,16 @@
 use std::collections::BTreeSet;
 
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::collections::{TreeMap, UnorderedSet};
-use near_sdk::{env, near_bindgen, require, AccountId, PanicOnDefault};
+use near_sdk::collections::UnorderedSet;
+use near_sdk::store::UnorderedMap;
+use near_sdk::{env, log, near_bindgen, require, AccountId, PanicOnDefault};
 use tallystick::borda::{DefaultBordaTally, Variant};
 
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
 pub struct RankedChoiceVoting {
     candidates: UnorderedSet<String>,
-    votes: TreeMap<AccountId, Vec<String>>,
+    votes: UnorderedMap<AccountId, Vec<String>>,
 }
 
 #[near_bindgen]
@@ -22,9 +23,10 @@ impl RankedChoiceVoting {
 
         Self {
             candidates: candidate_set,
-            votes: TreeMap::new(b"v"),
+            votes: UnorderedMap::new(b"v"),
         }
     }
+
     /// Cast vote for the signer.
     pub fn vote(&mut self, order: Vec<String>) {
         let unique_votes: BTreeSet<_> = order.iter().collect();
@@ -36,13 +38,15 @@ impl RankedChoiceVoting {
             require!(self.candidates.contains(v), "invalid candidate");
         }
 
-        self.votes.insert(&env::signer_account_id(), &order);
+        self.votes.insert(env::signer_account_id(), order);
+        log!("Successfully cast vote for {}", env::signer_account_id());
     }
+
     /// Returns current winner.
     pub fn get_winner(&self) -> Option<String> {
         let mut tally = DefaultBordaTally::new(1, Variant::Borda);
         for vote in self.votes.iter().map(|(_, v)| v) {
-            tally.add(vote).unwrap();
+            tally.add_ref(vote).unwrap();
         }
 
         let winner = tally.winners().into_unranked();

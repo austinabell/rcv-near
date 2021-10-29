@@ -10,6 +10,7 @@ import {
 import { Card } from "./Card";
 import update from "immutability-helper";
 import React from "react";
+import { InputForm } from "./InputForm";
 
 const style = {
   width: 400,
@@ -26,6 +27,7 @@ interface IProps {
 
 export const Container: FC<IProps> = ({ setShowNotification }: IProps) => {
   const [cards, setCards] = useState<Array<Item>>([]);
+  const [requireInit, setRequireInit] = useState<boolean>(false);
 
   const [winner, setWinner] = useState("");
 
@@ -42,7 +44,11 @@ export const Container: FC<IProps> = ({ setShowNotification }: IProps) => {
           return candidates;
         });
     }
-    initializeCandidates().then((candidates) => setCards(candidates));
+    initializeCandidates()
+      .then((candidates) => setCards(candidates))
+      .catch(() => {
+        setRequireInit(true);
+      });
   }, []);
 
   const moveCard = useCallback(
@@ -74,20 +80,11 @@ export const Container: FC<IProps> = ({ setShowNotification }: IProps) => {
 
   const getWinner = (e: SyntheticEvent) => {
     e.preventDefault();
-    window.contract
-      .get_winner()
-      .then((winner: string | null) => {
-        if (winner) {
-          setWinner(winner);
-        }
-      })
-      .catch((e: any) => {
-        // TODO remove this, just a workaround for dev to not have to manually init
-        window.contract.new({
-          candidates: ["Option a", "Option b", "Option d"],
-        });
-        console.error(e);
-      });
+    window.contract.get_winner().then((winner: string | null) => {
+      if (winner) {
+        setWinner(winner);
+      }
+    });
   };
 
   const submitVote = async (event: SyntheticEvent) => {
@@ -115,6 +112,33 @@ export const Container: FC<IProps> = ({ setShowNotification }: IProps) => {
     }, 11000);
   };
 
+  const initializeCandidates = (candidates: string[]) => {
+    window.contract
+      .new({
+        candidates,
+      })
+      .then((_: any) => setRequireInit(false));
+  };
+
+  const voteCards = () => {
+    return (
+      <>
+        <div style={style}>{cards.map((card, i) => renderCard(card, i))}</div>
+        <button onClick={submitVote} style={style}>
+          Vote
+        </button>
+        <div style={{ marginBottom: "8px" }} />
+        <button
+          onClick={getWinner}
+          style={{ width: 400, backgroundColor: "#303030" }}
+        >
+          Calculate Winner
+        </button>
+        <h2>{winner && "Winner is: " + winner}</h2>
+      </>
+    );
+  };
+
   return (
     <div
       style={{
@@ -125,18 +149,11 @@ export const Container: FC<IProps> = ({ setShowNotification }: IProps) => {
       }}
     >
       <h1>Ranked Choice Voting</h1>
-      <div style={style}>{cards.map((card, i) => renderCard(card, i))}</div>
-      <button onClick={submitVote} style={style}>
-        Vote
-      </button>
-      <div style={{ marginBottom: "8px" }} />
-      <button
-        onClick={getWinner}
-        style={{ width: 400, backgroundColor: "#303030" }}
-      >
-        Calculate Winner
-      </button>
-      <h2>{winner && "Winner is: " + winner}</h2>
+      {requireInit ? (
+        <InputForm initializeCandidates={initializeCandidates} />
+      ) : (
+        voteCards()
+      )}
     </div>
   );
 };
