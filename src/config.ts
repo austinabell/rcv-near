@@ -1,4 +1,4 @@
-const CONTRACT_NAME = process.env.CONTRACT_NAME || "pizza-rcv.testnet";
+const CONTRACT_NAME = process.env.CONTRACT_NAME || "ws.rcv.testnet";
 
 export function getConfig(env: string) {
   switch (env) {

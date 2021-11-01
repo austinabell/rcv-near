@@ -60,7 +60,7 @@ export const InputForm: FC<IProps> = ({ initializeCandidates }: IProps) => {
       })}
       <button
         onClick={handleInitialize}
-        style={{ width: 400, backgroundColor: "#303030" }}
+        style={{ width: 400 }}
       >
         Initialize Candidates
       </button>

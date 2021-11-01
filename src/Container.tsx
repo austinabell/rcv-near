@@ -117,7 +117,7 @@ export const Container: FC<IProps> = ({ setShowNotification }: IProps) => {
       .new({
         candidates,
       })
-      .then((_: any) => setRequireInit(false));
+      .then(() => setRequireInit(false));
   };
 
   const voteCards = () => {
