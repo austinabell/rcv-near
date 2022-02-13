@@ -37,7 +37,7 @@ async fn test_ranked_choice_winner() -> anyhow::Result<()> {
         .await?;
     total_gas_burnt += call_result.total_gas_burnt;
 
-    println!("gas burnt: {} yoctoNear", total_gas_burnt);
+    println!("Total gas burnt: {} yoctoNear", total_gas_burnt);
 
     let winner = contract
         .call(&worker, "get_winner")
@@ -45,7 +45,7 @@ async fn test_ranked_choice_winner() -> anyhow::Result<()> {
         .await?
         .json::<String>()?;
 
-    println!("OUR winner is: {}", winner);
+    println!("Our winner is: {}", winner);
     assert_eq!(winner, "C");
 
     Ok(())
