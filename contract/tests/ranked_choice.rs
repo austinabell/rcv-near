@@ -58,3 +58,35 @@ async fn test_ranked_choice_winner() -> anyhow::Result<()> {
 
     Ok(())
 }
+
+#[tokio::test]
+async fn test_ranked_choice_handle_error() -> anyhow::Result<()> {
+    let worker = workspaces::sandbox();
+    let alice = worker.dev_create_account().await?;
+
+    let contract = worker
+        .dev_deploy(include_bytes!("../../out/main.wasm"))
+        .await?;
+
+    contract
+        .call(&worker, "new")
+        .args_json(serde_json::json!({
+            "candidates": ["A".to_string(), "B".to_string(), "C".to_string()],
+        }))?
+        .transact()
+        .await?;
+
+    // Alice votes for camdidates "C", "B", "D" in that order. But "D" is not
+    // a candidate. Our call should return us an error!
+    let result = alice
+        .call(&worker, contract.id(), "vote")
+        .args_json(serde_json::json!({
+            "order": ["C".to_string(), "B".to_string(), "D".to_string()],
+        }))?
+        .transact()
+        .await?;
+    assert!(result.is_failure());
+    println!("{:?}", result.status);
+
+    Ok(())
+}
