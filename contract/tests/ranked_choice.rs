@@ -18,7 +18,7 @@ async fn test_ranked_choice_winner() -> anyhow::Result<()> {
     contract
         .call(&worker, "new")
         .args_json(serde_json::json!({
-            "candidates": ["A".to_string(), "B".to_string(), "C".to_string()],
+            "candidates": ["A", "B", "C"],
         }))?
         .transact()
         .await?;
@@ -28,7 +28,7 @@ async fn test_ranked_choice_winner() -> anyhow::Result<()> {
     let call_result = alice
         .call(&worker, contract.id(), "vote")
         .args_json(serde_json::json!({
-            "order": ["C".to_string(), "B".to_string(), "A".to_string()],
+            "order": ["C", "B", "A"],
         }))?
         .transact()
         .await?;
@@ -38,7 +38,7 @@ async fn test_ranked_choice_winner() -> anyhow::Result<()> {
     let call_result = bob
         .call(&worker, contract.id(), "vote")
         .args_json(serde_json::json!({
-            "order": ["C".to_string(), "A".to_string(), "B".to_string()],
+            "order": ["C", "A", "B"],
         }))?
         .transact()
         .await?;
@@ -71,7 +71,7 @@ async fn test_ranked_choice_handle_error() -> anyhow::Result<()> {
     contract
         .call(&worker, "new")
         .args_json(serde_json::json!({
-            "candidates": ["A".to_string(), "B".to_string(), "C".to_string()],
+            "candidates": ["A", "B", "C"],
         }))?
         .transact()
         .await?;
@@ -81,7 +81,7 @@ async fn test_ranked_choice_handle_error() -> anyhow::Result<()> {
     let result = alice
         .call(&worker, contract.id(), "vote")
         .args_json(serde_json::json!({
-            "order": ["C".to_string(), "B".to_string(), "D".to_string()],
+            "order": ["C", "B", "D"],
         }))?
         .transact()
         .await?;
