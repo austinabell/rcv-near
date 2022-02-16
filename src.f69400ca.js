@@ -38455,8 +38455,6 @@ function base (ALPHABET) {
     if (typeof source !== 'string') { throw new TypeError('Expected String') }
     if (source.length === 0) { return _Buffer.alloc(0) }
     var psz = 0
-        // Skip leading spaces.
-    if (source[psz] === ' ') { return }
         // Skip and count leading '1's.
     var zeroes = 0
     var length = 0
@@ -38483,8 +38481,6 @@ function base (ALPHABET) {
       length = i
       psz++
     }
-        // Skip trailing spaces.
-    if (source[psz] === ' ') { return }
         // Skip leading zeroes in b256.
     var it4 = size - length
     while (it4 !== size && b256[it4] === 0) {
@@ -40367,11 +40363,12 @@ if (typeof Object.create === 'function') {
  * Copyright(c) 2016 Douglas Christopher Wilson
  * MIT Licensed
  */
-
+'use strict';
 /**
  * Module exports.
  * @public
  */
+
 module.exports = toIdentifier;
 /**
  * Trasform the given string into a JavaScript identifier
@@ -52903,14 +52900,14 @@ var cache = function (fn) {
     if (!(fn instanceof Function)) {
         called = true;
         store = fn;
-        delete(fn);
+        fn = null;
     }
 
     return function () {
         if (!called) {
             called = true;
             store = fn.apply(this, arguments);
-            delete(fn);
+            fn = null;
         }
         return store;
     };
@@ -53320,7 +53317,7 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.getConfig = getConfig;
-var CONTRACT_NAME = "dev-1635699687151-68021524924625" || "pizza-rcv.testnet";
+var CONTRACT_NAME = "dev-1644964816958-13035462283263" || "ws.rcv.testnet";
 
 function getConfig(env) {
   switch (env) {
@@ -53359,7 +53356,7 @@ function getConfig(env) {
       return {
         networkId: "local",
         nodeUrl: "http://localhost:3030",
-        keyPath: "/Users/austinabell" + "/.near/validator_key.json",
+        keyPath: "".concat("/Users/austinabell", "/.near/validator_key.json"),
         walletUrl: "http://localhost:4000/wallet",
         contractName: CONTRACT_NAME
       };
@@ -53382,7 +53379,7 @@ function getConfig(env) {
       };
 
     default:
-      throw Error("Unconfigured environment '" + env + "'. Can be configured in src/config.ts.");
+      throw Error("Unconfigured environment '".concat(env, "'. Can be configured in src/config.ts."));
   }
 }
 },{}],"utils.ts":[function(require,module,exports) {
@@ -53392,8 +53389,8 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.initContract = initContract;
-exports.logout = logout;
 exports.login = login;
+exports.logout = logout;
 
 var _nearApiJs = require("near-api-js");
 
@@ -55025,7 +55022,7 @@ function invariant(condition, format) {
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.END_DRAG = exports.DROP = exports.HOVER = exports.PUBLISH_DRAG_SOURCE = exports.BEGIN_DRAG = exports.INIT_COORDS = void 0;
+exports.PUBLISH_DRAG_SOURCE = exports.INIT_COORDS = exports.HOVER = exports.END_DRAG = exports.DROP = exports.BEGIN_DRAG = void 0;
 var INIT_COORDS = 'dnd-core/INIT_COORDS';
 exports.INIT_COORDS = INIT_COORDS;
 var BEGIN_DRAG = 'dnd-core/BEGIN_DRAG';
@@ -55064,11 +55061,11 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.get = get;
-exports.without = without;
-exports.isString = isString;
-exports.isObject = isObject;
-exports.xor = xor;
 exports.intersection = intersection;
+exports.isObject = isObject;
+exports.isString = isString;
+exports.without = without;
+exports.xor = xor;
 
 function _typeof(obj) {
   "@babel/helpers - typeof";
@@ -55406,9 +55403,13 @@ function ownKeys(object, enumerableOnly) {
 
   if (Object.getOwnPropertySymbols) {
     var symbols = Object.getOwnPropertySymbols(object);
-    if (enumerableOnly) symbols = symbols.filter(function (sym) {
-      return Object.getOwnPropertyDescriptor(object, sym).enumerable;
-    });
+
+    if (enumerableOnly) {
+      symbols = symbols.filter(function (sym) {
+        return Object.getOwnPropertyDescriptor(object, sym).enumerable;
+      });
+    }
+
     keys.push.apply(keys, symbols);
   }
 
@@ -55607,15 +55608,36 @@ function _createClass(Constructor, protoProps, staticProps) {
   return Constructor;
 }
 
+function _defineProperty(obj, key, value) {
+  if (key in obj) {
+    Object.defineProperty(obj, key, {
+      value: value,
+      enumerable: true,
+      configurable: true,
+      writable: true
+    });
+  } else {
+    obj[key] = value;
+  }
+
+  return obj;
+}
+
 var DragDropManagerImpl = /*#__PURE__*/function () {
   function DragDropManagerImpl(store, monitor) {
     var _this = this;
 
     _classCallCheck(this, DragDropManagerImpl);
 
-    this.isSetUp = false;
+    _defineProperty(this, "store", void 0);
 
-    this.handleRefCountChange = function () {
+    _defineProperty(this, "monitor", void 0);
+
+    _defineProperty(this, "backend", void 0);
+
+    _defineProperty(this, "isSetUp", false);
+
+    _defineProperty(this, "handleRefCountChange", function () {
       var shouldSetUp = _this.store.getState().refCount > 0;
 
       if (_this.backend) {
@@ -55629,7 +55651,7 @@ var DragDropManagerImpl = /*#__PURE__*/function () {
           _this.isSetUp = false;
         }
       }
-    };
+    });
 
     this.store = store;
     this.monitor = monitor;
@@ -55734,14 +55756,9 @@ function ownKeys(object, enumerableOnly) {
 
   if (Object.getOwnPropertySymbols) {
     var symbols = Object.getOwnPropertySymbols(object);
-
-    if (enumerableOnly) {
-      symbols = symbols.filter(function (sym) {
-        return Object.getOwnPropertyDescriptor(object, sym).enumerable;
-      });
-    }
-
-    keys.push.apply(keys, symbols);
+    enumerableOnly && (symbols = symbols.filter(function (sym) {
+      return Object.getOwnPropertyDescriptor(object, sym).enumerable;
+    })), keys.push.apply(keys, symbols);
   }
 
   return keys;
@@ -55749,19 +55766,12 @@ function ownKeys(object, enumerableOnly) {
 
 function _objectSpread2(target) {
   for (var i = 1; i < arguments.length; i++) {
-    var source = arguments[i] != null ? arguments[i] : {};
-
-    if (i % 2) {
-      ownKeys(Object(source), true).forEach(function (key) {
-        (0, _defineProperty.default)(target, key, source[key]);
-      });
-    } else if (Object.getOwnPropertyDescriptors) {
-      Object.defineProperties(target, Object.getOwnPropertyDescriptors(source));
-    } else {
-      ownKeys(Object(source)).forEach(function (key) {
-        Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key));
-      });
-    }
+    var source = null != arguments[i] ? arguments[i] : {};
+    i % 2 ? ownKeys(Object(source), !0).forEach(function (key) {
+      (0, _defineProperty.default)(target, key, source[key]);
+    }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)) : ownKeys(Object(source)).forEach(function (key) {
+      Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key));
+    });
   }
 
   return target;
@@ -55772,12 +55782,12 @@ function _objectSpread2(target) {
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
+exports.__DO_NOT_USE__ActionTypes = void 0;
 exports.applyMiddleware = applyMiddleware;
 exports.bindActionCreators = bindActionCreators;
 exports.combineReducers = combineReducers;
 exports.compose = compose;
 exports.createStore = createStore;
-exports.__DO_NOT_USE__ActionTypes = void 0;
 
 var _objectSpread2 = _interopRequireDefault(require("@babel/runtime/helpers/esm/objectSpread2"));
 
@@ -56474,8 +56484,8 @@ if ("development" !== 'production' && typeof isCrushed.name === 'string' && isCr
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.areCoordsEqual = areCoordsEqual;
 exports.areArraysEqual = areArraysEqual;
+exports.areCoordsEqual = areCoordsEqual;
 exports.strictEquality = void 0;
 
 var strictEquality = function strictEquality(a, b) {
@@ -56538,9 +56548,13 @@ function ownKeys(object, enumerableOnly) {
 
   if (Object.getOwnPropertySymbols) {
     var symbols = Object.getOwnPropertySymbols(object);
-    if (enumerableOnly) symbols = symbols.filter(function (sym) {
-      return Object.getOwnPropertyDescriptor(object, sym).enumerable;
-    });
+
+    if (enumerableOnly) {
+      symbols = symbols.filter(function (sym) {
+        return Object.getOwnPropertyDescriptor(object, sym).enumerable;
+      });
+    }
+
     keys.push.apply(keys, symbols);
   }
 
@@ -56625,11 +56639,11 @@ function reduce() {
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
+exports.REMOVE_TARGET = exports.REMOVE_SOURCE = exports.ADD_TARGET = exports.ADD_SOURCE = void 0;
 exports.addSource = addSource;
 exports.addTarget = addTarget;
 exports.removeSource = removeSource;
 exports.removeTarget = removeTarget;
-exports.REMOVE_TARGET = exports.REMOVE_SOURCE = exports.ADD_TARGET = exports.ADD_SOURCE = void 0;
 var ADD_SOURCE = 'dnd-core/ADD_SOURCE';
 exports.ADD_SOURCE = ADD_SOURCE;
 var ADD_TARGET = 'dnd-core/ADD_TARGET';
@@ -56693,9 +56707,13 @@ function ownKeys(object, enumerableOnly) {
 
   if (Object.getOwnPropertySymbols) {
     var symbols = Object.getOwnPropertySymbols(object);
-    if (enumerableOnly) symbols = symbols.filter(function (sym) {
-      return Object.getOwnPropertyDescriptor(object, sym).enumerable;
-    });
+
+    if (enumerableOnly) {
+      symbols = symbols.filter(function (sym) {
+        return Object.getOwnPropertyDescriptor(object, sym).enumerable;
+      });
+    }
+
     keys.push.apply(keys, symbols);
   }
 
@@ -56837,8 +56855,8 @@ function reduce() {
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
+exports.NONE = exports.ALL = void 0;
 exports.areDirty = areDirty;
-exports.ALL = exports.NONE = void 0;
 
 var _js_utils = require("./js_utils");
 
@@ -56974,9 +56992,13 @@ function ownKeys(object, enumerableOnly) {
 
   if (Object.getOwnPropertySymbols) {
     var symbols = Object.getOwnPropertySymbols(object);
-    if (enumerableOnly) symbols = symbols.filter(function (sym) {
-      return Object.getOwnPropertyDescriptor(object, sym).enumerable;
-    });
+
+    if (enumerableOnly) {
+      symbols = symbols.filter(function (sym) {
+        return Object.getOwnPropertyDescriptor(object, sym).enumerable;
+      });
+    }
+
     keys.push.apply(keys, symbols);
   }
 
@@ -57041,9 +57063,9 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.add = add;
-exports.subtract = subtract;
-exports.getSourceClientOffset = getSourceClientOffset;
 exports.getDifferenceFromInitialOffset = getDifferenceFromInitialOffset;
+exports.getSourceClientOffset = getSourceClientOffset;
+exports.subtract = subtract;
 
 /**
  * Coordinate addition
@@ -57145,9 +57167,28 @@ function _createClass(Constructor, protoProps, staticProps) {
   return Constructor;
 }
 
+function _defineProperty(obj, key, value) {
+  if (key in obj) {
+    Object.defineProperty(obj, key, {
+      value: value,
+      enumerable: true,
+      configurable: true,
+      writable: true
+    });
+  } else {
+    obj[key] = value;
+  }
+
+  return obj;
+}
+
 var DragDropMonitorImpl = /*#__PURE__*/function () {
   function DragDropMonitorImpl(store, registry) {
     _classCallCheck(this, DragDropMonitorImpl);
+
+    _defineProperty(this, "store", void 0);
+
+    _defineProperty(this, "registry", void 0);
 
     this.store = store;
     this.registry = registry;
@@ -57792,6 +57833,21 @@ function _createClass(Constructor, protoProps, staticProps) {
   return Constructor;
 }
 
+function _defineProperty(obj, key, value) {
+  if (key in obj) {
+    Object.defineProperty(obj, key, {
+      value: value,
+      enumerable: true,
+      configurable: true,
+      writable: true
+    });
+  } else {
+    obj[key] = value;
+  }
+
+  return obj;
+}
+
 function _slicedToArray(arr, i) {
   return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _unsupportedIterableToArray(arr, i) || _nonIterableRest();
 }
@@ -57820,14 +57876,17 @@ function _arrayLikeToArray(arr, len) {
 }
 
 function _iterableToArrayLimit(arr, i) {
-  if (typeof Symbol === "undefined" || !(Symbol.iterator in Object(arr))) return;
+  var _i = arr == null ? null : typeof Symbol !== "undefined" && arr[Symbol.iterator] || arr["@@iterator"];
+
+  if (_i == null) return;
   var _arr = [];
   var _n = true;
   var _d = false;
-  var _e = undefined;
+
+  var _s, _e;
 
   try {
-    for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) {
+    for (_i = _i.call(arr); !(_n = (_s = _i.next()).done); _n = true) {
       _arr.push(_s.value);
 
       if (i && _arr.length === i) break;
@@ -57902,11 +57961,18 @@ var HandlerRegistryImpl = /*#__PURE__*/function () {
   function HandlerRegistryImpl(store) {
     _classCallCheck(this, HandlerRegistryImpl);
 
-    this.types = new Map();
-    this.dragSources = new Map();
-    this.dropTargets = new Map();
-    this.pinnedSourceId = null;
-    this.pinnedSource = null;
+    _defineProperty(this, "types", new Map());
+
+    _defineProperty(this, "dragSources", new Map());
+
+    _defineProperty(this, "dropTargets", new Map());
+
+    _defineProperty(this, "pinnedSourceId", null);
+
+    _defineProperty(this, "pinnedSource", null);
+
+    _defineProperty(this, "store", void 0);
+
     this.store = store;
   }
 
@@ -59364,8 +59430,8 @@ exports.TargetConnector = TargetConnector;
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.registerTarget = registerTarget;
 exports.registerSource = registerSource;
+exports.registerTarget = registerTarget;
 
 function registerTarget(type, target, manager) {
   var registry = manager.getRegistry();
@@ -59459,15 +59525,15 @@ Object.keys(_registration).forEach(function (key) {
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
+exports.checkDecoratorArguments = checkDecoratorArguments;
 exports.getDecoratedComponent = getDecoratedComponent;
 exports.isClassComponent = isClassComponent;
+exports.isFunction = isFunction;
+exports.isPlainObject = isPlainObject;
 exports.isRefForwardingComponent = isRefForwardingComponent;
 exports.isRefable = isRefable;
-exports.checkDecoratorArguments = checkDecoratorArguments;
-exports.isFunction = isFunction;
-exports.noop = noop;
-exports.isPlainObject = isPlainObject;
 exports.isValidType = isValidType;
+exports.noop = noop;
 
 function _typeof(obj) {
   "@babel/helpers - typeof";
@@ -59567,7 +59633,7 @@ function isValidType(type, allowArray) {
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.SerialDisposable = exports.CompositeDisposable = exports.Disposable = void 0;
+exports.SerialDisposable = exports.Disposable = exports.CompositeDisposable = void 0;
 
 var _utils = require("./utils");
 
@@ -62044,8 +62110,8 @@ function useCollectedProps(collector, monitor, connector) {
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.useConnectDragSource = useConnectDragSource;
 exports.useConnectDragPreview = useConnectDragPreview;
+exports.useConnectDragSource = useConnectDragSource;
 
 var _react = require("react");
 
@@ -62857,7 +62923,9 @@ function type(obj) {
   return toString.call(obj).slice(8, -1);
 }
 
-var assign = Object.assign || function (target, source) {
+var assign = Object.assign ||
+/* istanbul ignore next */
+function (target, source) {
   getAllKeys(source).forEach(function (key) {
     if (hasOwnProperty.call(source, key)) {
       target[key] = source[key];
@@ -62880,7 +62948,9 @@ function copy(object) {
   : object;
 }
 
-var Context = function () {
+var Context =
+/** @class */
+function () {
   function Context() {
     this.commands = assign({}, defaultCommands);
     this.update = this.update.bind(this); // Deprecated: update.extend, update.isEquals and update.newContext
@@ -63382,6 +63452,23 @@ var style = {
   width: 400
 };
 
+function shuffle(array) {
+  var _a;
+
+  var currentIndex = array.length,
+      randomIndex; // While there remain elements to shuffle...
+
+  while (currentIndex != 0) {
+    // Pick a remaining element...
+    randomIndex = Math.floor(Math.random() * currentIndex);
+    currentIndex--; // And swap it with the current element.
+
+    _a = [array[randomIndex], array[currentIndex]], array[currentIndex] = _a[0], array[randomIndex] = _a[1];
+  }
+
+  return array;
+}
+
 var Container = function (_a) {
   var setShowNotification = _a.setShowNotification;
 
@@ -63413,7 +63500,7 @@ var Container = function (_a) {
               });
             }
 
-            return candidates;
+            return shuffle(candidates);
           })];
         });
       });
@@ -63598,17 +63685,17 @@ function App() {
 
 
 function Notification() {
-  var urlPrefix = "https://explorer." + networkId + ".near.org/accounts";
+  var urlPrefix = "https://explorer.".concat(networkId, ".near.org/accounts");
   return _react.default.createElement("aside", null, _react.default.createElement("a", {
     target: "_blank",
     rel: "noreferrer",
-    href: urlPrefix + "/" + window.accountId
+    href: "".concat(urlPrefix, "/").concat(window.accountId)
   }, window.accountId), " "
   /* React trims whitespace around tags; insert literal space character when needed */
   , "called method: 'vote' in contract:", " ", _react.default.createElement("a", {
     target: "_blank",
     rel: "noreferrer",
-    href: urlPrefix + "/" + window.contract.contractId
+    href: "".concat(urlPrefix, "/").concat(window.contract.contractId)
   }, window.contract.contractId), _react.default.createElement("footer", null, _react.default.createElement("div", null, "\u2714 Succeeded"), _react.default.createElement("div", null, "Just now")));
 }
 },{"regenerator-runtime/runtime":"../node_modules/regenerator-runtime/runtime.js","react":"../node_modules/react/index.js","./utils":"utils.ts","./global.css":"global.css","./config":"config.ts","./Container":"Container.tsx"}],"../node_modules/react-dnd-html5-backend/dist/esm/utils/js_utils.js":[function(require,module,exports) {
@@ -63618,8 +63705,8 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.memoize = memoize;
-exports.without = without;
 exports.union = union;
+exports.without = without;
 
 // cheap lodash replacements
 function memoize(fn) {
@@ -63946,9 +64033,9 @@ exports.MonotonicInterpolant = MonotonicInterpolant;
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.getNodeClientOffset = getNodeClientOffset;
-exports.getEventClientOffset = getEventClientOffset;
 exports.getDragPreviewOffset = getDragPreviewOffset;
+exports.getEventClientOffset = getEventClientOffset;
+exports.getNodeClientOffset = getNodeClientOffset;
 
 var _BrowserDetector = require("./BrowserDetector");
 
@@ -64061,7 +64148,7 @@ function getDragPreviewOffset(sourceNode, dragPreview, clientOffset, anchorPoint
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.HTML = exports.TEXT = exports.URL = exports.FILE = void 0;
+exports.URL = exports.TEXT = exports.HTML = exports.FILE = void 0;
 var FILE = '__NATIVE_FILE__';
 exports.FILE = FILE;
 var URL = '__NATIVE_URL__';
@@ -64124,6 +64211,9 @@ var nativeTypesConfig = (_nativeTypesConfig = {}, _defineProperty(_nativeTypesCo
     },
     items: function items(dataTransfer) {
       return dataTransfer.items;
+    },
+    dataTransfer: function dataTransfer(_dataTransfer) {
+      return _dataTransfer;
     }
   },
   matchesTypes: ['Files']
@@ -64131,6 +64221,9 @@ var nativeTypesConfig = (_nativeTypesConfig = {}, _defineProperty(_nativeTypesCo
   exposeProperties: {
     html: function html(dataTransfer, matchesTypes) {
       return (0, _getDataFromDataTransfer.getDataFromDataTransfer)(dataTransfer, matchesTypes, '');
+    },
+    dataTransfer: function dataTransfer(_dataTransfer2) {
+      return _dataTransfer2;
     }
   },
   matchesTypes: ['Html', 'text/html']
@@ -64138,6 +64231,9 @@ var nativeTypesConfig = (_nativeTypesConfig = {}, _defineProperty(_nativeTypesCo
   exposeProperties: {
     urls: function urls(dataTransfer, matchesTypes) {
       return (0, _getDataFromDataTransfer.getDataFromDataTransfer)(dataTransfer, matchesTypes, '').split('\n');
+    },
+    dataTransfer: function dataTransfer(_dataTransfer3) {
+      return _dataTransfer3;
     }
   },
   matchesTypes: ['Url', 'text/uri-list']
@@ -64145,6 +64241,9 @@ var nativeTypesConfig = (_nativeTypesConfig = {}, _defineProperty(_nativeTypesCo
   exposeProperties: {
     text: function text(dataTransfer, matchesTypes) {
       return (0, _getDataFromDataTransfer.getDataFromDataTransfer)(dataTransfer, matchesTypes, '');
+    },
+    dataTransfer: function dataTransfer(_dataTransfer4) {
+      return _dataTransfer4;
     }
   },
   matchesTypes: ['Text', 'text/plain']
@@ -64538,6 +64637,10 @@ var HTML5BackendImpl = /*#__PURE__*/function () {
 
     _defineProperty(this, "dragOverTargetIds", null);
 
+    _defineProperty(this, "lastClientOffset", null);
+
+    _defineProperty(this, "hoverRafId", null);
+
     _defineProperty(this, "getSourceClientOffset", function (sourceId) {
       var source = _this.sourceNodes.get(sourceId);
 
@@ -64767,10 +64870,19 @@ var HTML5BackendImpl = /*#__PURE__*/function () {
       }
 
       _this.altKeyPressed = e.altKey;
+      _this.lastClientOffset = (0, _OffsetUtils.getEventClientOffset)(e);
 
-      _this.actions.hover(dragOverTargetIds || [], {
-        clientOffset: (0, _OffsetUtils.getEventClientOffset)(e)
-      });
+      if (_this.hoverRafId === null && typeof requestAnimationFrame !== 'undefined') {
+        _this.hoverRafId = requestAnimationFrame(function () {
+          if (_this.monitor.isDragging()) {
+            _this.actions.hover(dragOverTargetIds || [], {
+              clientOffset: _this.lastClientOffset
+            });
+          }
+
+          _this.hoverRafId = null;
+        });
+      }
 
       var canDrop = (dragOverTargetIds || []).some(function (targetId) {
         return _this.monitor.canDropOnTarget(targetId);
@@ -65214,13 +65326,13 @@ function getEmptyImage() {
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
+exports.NativeTypes = exports.HTML5Backend = void 0;
 Object.defineProperty(exports, "getEmptyImage", {
   enumerable: true,
   get: function () {
     return _getEmptyImage.getEmptyImage;
   }
 });
-exports.NativeTypes = exports.HTML5Backend = void 0;
 
 var _HTML5BackendImpl = require("./HTML5BackendImpl");
 
@@ -65289,7 +65401,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "64135" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "58079" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
