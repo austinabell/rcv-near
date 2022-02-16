@@ -1,9 +1,8 @@
-use std::collections::BTreeSet;
-
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::UnorderedSet;
 use near_sdk::store::UnorderedMap;
 use near_sdk::{env, log, near_bindgen, require, AccountId, PanicOnDefault};
+use std::collections::BTreeSet;
 use tallystick::borda::{DefaultBordaTally, Variant};
 
 #[near_bindgen]

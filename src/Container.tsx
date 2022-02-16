@@ -25,6 +25,19 @@ interface IProps {
   setShowNotification: Dispatch<SetStateAction<boolean>>;
 }
 
+function shuffle(array: any[]) {
+  let currentIndex = array.length,  randomIndex;
+  while (currentIndex != 0) {
+    randomIndex = Math.floor(Math.random() * currentIndex);
+    currentIndex--;
+
+    [array[currentIndex], array[randomIndex]] = [
+      array[randomIndex], array[currentIndex]];
+  }
+
+  return array;
+}
+
 export const Container: FC<IProps> = ({ setShowNotification }: IProps) => {
   const [cards, setCards] = useState<Array<Item>>([]);
   const [requireInit, setRequireInit] = useState<boolean>(false);
@@ -41,7 +54,7 @@ export const Container: FC<IProps> = ({ setShowNotification }: IProps) => {
             candidates.push({ id: i, text: candidate_names[i] });
           }
 
-          return candidates;
+          return shuffle(candidates);
         });
     }
     initializeCandidates()
